@@ -14,41 +14,48 @@ _创建工作流，让你的项目具备持续集成（CI）能力。_
 </header>
 
 <!--
-  <<< Author notes: Step 2 >>>
+  <<< Author notes: Step 3 >>>
   Start this step by acknowledging the previous step.
   Define terms and link to docs.github.com.
 -->
 
-## Step 2: 修复测试问题
+## Step 3: 上传测试报告
 
-_做得好！你已经成功添加了模板工作流! :tada:*_
+_工作流已经运行完成啦! :tada:_
 
-把这个文件添加到分支中后，GitHub Actions 就会自动在你的仓库上运行持续集成（CI）流程。
+那如果我们想在另一个任务（job）中使用上一个任务的输出结果，该怎么办呢？
+可以借助 GitHub Actions 内置的 [artifact 存储功能](https://docs.github.com/actions/advanced-guides/storing-workflow-data-as-artifacts)，把某个任务生成的文件保存下来，供同一个工作流中的其他任务使用。
 
-当 GitHub Actions 开始执行工作流时，你会在拉取请求的合并区域看到类似下图的检查进度：
+要上传这些文件（称为“构件”或 artifact），我们可以使用 GitHub 官方提供的 [`actions/upload-artifact`](https://github.com/actions/upload-artifact) 这个 Action。
 
-<img alt="checks in progress in a merge box" src=https://user-images.githubusercontent.com/16547949/66080348-ecc5f580-e533-11e9-909e-c213b08790eb.png width=400 />
+### :keyboard: 实操环节: 上传测试报告
 
-你可以通过进入 **Actions** 标签页，或者点击合并区域中的 **Details（详细信息）**，来查看 GitHub Actions 的执行情况。
+1. 打开并编辑你的工作流文件。
+2. 在 `build` 任务中的 `Run markdown lint` 步骤里，修改命令，使用 `vfile-reporter-json` 把检测结果输出为 `remark-lint-report.json`。
+3. 在 `build` 任务中添加一个新步骤，使用 `upload-artifact` 动作，把生成的 `remark-lint-report.json` 文件上传到 artifact 存储中。
+4. 修改后的 `build` 任务应如下所示：
 
-测试完成后，你会看到一个红色叉号 :x:（代表失败）或 :heavy_check_mark:（代表通过）。这时，你可以打开构建日志，查看每个步骤的执行结果。
+   ```yml
+   build:
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v4
 
-*能从日志中看出是哪个测试没通过吗？*
-进入一个失败的构建，向下滚动日志，找到列出所有单元测试的部分。带有 “x” 的那一项就是出错的测试。
+       - name: Run markdown lint
+         run: |
+           npm install remark-cli remark-preset-lint-consistent vfile-reporter-json
+           npx remark . --use remark-preset-lint-consistent --report vfile-reporter-json 2> remark-lint-report.json
 
-<img alt="screenshot of a sample build log with the names of the tests blurred out" src=https://user-images.githubusercontent.com/16547949/65922013-e740a200-e3b1-11e9-8151-faf52c30201e.png width=400 />
+       - uses: actions/upload-artifact@v4
+         with:
+           name: remark-lint-report
+           path: remark-lint-report.json
 
-如果没有出现检查结果，或者检查卡在“运行中”状态，可以尝试以下方法让它重新触发：
+5. 提交（Commit）修改到当前分支。
+6. 等待大约 20 秒，然后刷新本教程页面。[GitHub Actions](https://docs.github.com/actions) 会自动检测更新并进入下一步。
 
-* 刷新页面，有时工作流已运行完，但页面尚未更新。
-* 在当前分支上再提交一次，因为工作流是通过 `push` 事件触发的。
-* 打开 GitHub 上的工作流文件，确认没有红色波浪线提示语法错误。
-
-### :keyboard: 实操环节：修复测试问题
-
-1. 修改 `ci` 分支中的内容，为了让测试能够通过。你需要查看日志来找出失败的原因。
-2. **提交更改（Commit changes）**。
-3. 等待大约 20 秒，然后刷新此页面（当前教程页面）。[GitHub Actions](https://docs.github.com/actions) 会自动检测并跳转到下一步。
+就像 `upload-artifact` 负责上传文件一样，你也可以使用 [`actions/download-artifact`](https://github.com/actions/download-artifact) 在后续任务中下载这些文件。
+不过，为了让课程流程更简洁，这里我们暂时不演示下载步骤。
 
 <footer>
 
